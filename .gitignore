@@ -1,0 +1,67 @@
+# ==========================================
+# 1. 构建产物与二进制文件 (Build Artifacts)
+# ==========================================
+# 根据你的 CMakeLists.txt 和 run.sh，可执行文件输出在 bin/ 目录
+bin/
+*.out
+*.exe
+*.so
+*.a
+
+# ==========================================
+# 2. CMake 生成的中间文件 (CMake Generated)
+# ==========================================
+# run.sh 中创建的 build 目录，包含所有编译中间过程
+build/
+# 如果有时直接在源码目录运行 cmake，也会产生这些文件
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# ==========================================
+# 3. IDE 与编辑器配置 (IDE & Editors)
+# ==========================================
+# VS Code
+.vscode/
+# CLion / JetBrains
+.idea/
+*.iml
+# Vim
+*.swp
+*.swo
+*~
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ==========================================
+# 4. 操作系统临时文件 (OS Specific)
+# ==========================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+# Windows
+Thumbs.db
+desktop.ini
+# Linux
+*~
+
+# ==========================================
+# 5. 日志与运行时数据 (Logs & Runtime)
+# ==========================================
+# 如果程序运行过程中产生了日志文件或核心转储文件
+*.log
+core
+*.core
+gmon.out
+
+# ==========================================
+# 6. 依赖包管理 (如果有引入第三方库)
+# ==========================================
+# 如果你以后使用 vcpkg 或 conan
+vcpkg/
+conanfile.txt
+build/_deps/
