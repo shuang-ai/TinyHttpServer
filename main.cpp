@@ -20,7 +20,7 @@ void *msg_request(void *arg)
 /*******************主程序**************************** */
 int main(int argc, const char *argv[]) 
 {
-    int port = 80;         //默认使用80端口号
+    int port = 8888;         //默认使用8888端口号
 
     //判断是否手动传入端口号
     if(argc>1)
