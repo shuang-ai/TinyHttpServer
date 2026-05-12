@@ -243,7 +243,9 @@ static int  handle_request(int sock, const char *method,const char * path, const
 
 
 
-//用于处理客户端信息函数的定义
+// 用于处理客户端信息函数的定义
+// sock表示客户端套接字文件描述符
+// 接收请求 → 解析请求行 → 提取方法/URL → 区分GET/POST → 路由分发 → 返回响应
 int handler_msg(int sock)
 {
     //定义容器存储客户端发来的数据
@@ -319,7 +321,7 @@ int handler_msg(int sock)
     int t = 0;                //填充url字符串的变量
     char *querry_string = NULL;     //指向url中，是否有要处理的数据，如果有，则指向要处理数据的起始地址
 
-    for(i=0; i<SIZE; i++)      //继续向后遍历请求首部
+    for(; i<SIZE; i++)      //继续向后遍历请求首部
     {
         //可能还会出现空格
         if(isspace(buf[i]))
@@ -405,6 +407,4 @@ int handler_msg(int sock)
 //表示所有请求都正常处理了
     close(sock);        //关闭客户端
     return 0;
-
-
 }
