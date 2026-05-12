@@ -9,13 +9,14 @@
 #include <sys/stat.h>// for stat
 #include <fcntl.h>   // for open
 #include <sys/sendfile.h>
+#include<libgen.h>
 
 // 原有头文件
 #include "http.h"
 #include "custom_handle.h"
 
 //声明初始化服务器函数
-int  init_server(int _port)
+int init_server(int _port)
 {
     //创建套接字
     int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -359,10 +360,24 @@ int handler_msg(int sock)
 
     //我们可以把请求资源路径固定为 wwwroot 下的资源
     char path[SIZE] = "";         //用于确定要响应的文件路径
-    sprintf(path, "../wwwroot%s", url);       //将url合成一个服务器中的路径
+    // 获取可执行文件的路径，上一层路径就是文件根目录
+    char exe_path[256];
+    // "/home/.../http/bin/thttpd"
+    ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
+    if (len == -1) {
+        perror("readlink error");
+        close(sock);
+        return -1;
+    }
+    exe_path[len] = '\0';  // 确保字符串以 null 结尾  
+
+    char *dir = dirname(exe_path);   // "/home/.../http/bin"
+    dir = dirname(dir);             // "/home/.../http"  ← 项目根目录！
+
+    sprintf(path, "%s/wwwroot%s", dir, url);       //将url合成一个服务器中的路径
 
 
-        //如果请求的没有的地址没有任何携带资源，那么默认返回index.html
+    //如果请求的没有的地址没有任何携带资源，那么默认返回index.html
     if(path[strlen(path)-1] == '/')
     {
         strcat(path, "index.html");
