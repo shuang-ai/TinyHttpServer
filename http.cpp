@@ -193,7 +193,7 @@ static int echo_www(int sock, const char *path, size_t s)
 }
 
 //定义处理POST请求或携带数据的GET请求
-static int  handle_request(int sock, const char *method,const char * path, const char * querry_string)
+static int handle_request(int sock, const char *method,const char * path, const char * querry_string)
 {
     char line[SIZE] = "";     //存储一行信息
     int ret = 0;         //接收读取的内容
@@ -241,185 +241,167 @@ static int  handle_request(int sock, const char *method,const char * path, const
     return 0;
 }
 
+// 定义解析请求行的结构体
+typedef struct {
+    char method[32];        // 请求方法
+    char url[SIZE];         // 请求URL
+    char *query_string;     // 查询字符串指针
+    int need_handle;        // 是否需要自定义处理
+} RequestInfo;
 
+// 解析请求行，提取方法和URL
+static int parse_request_line(int sock, RequestInfo *req_info)
+{
+    char buf[SIZE] = "";
+    int count = get_line(sock, buf);
+    
+    if (count <= 0) {
+        return -1;
+    }
 
+    // 提取请求方法
+    int i = 0;
+    int k = 0;
+    for (i = 0; i < count; i++) {
+        if (isspace(buf[i])) {
+            break;
+        }
+        req_info->method[k++] = buf[i];
+    }
+    req_info->method[k] = '\0';
+
+    // 跳过空格
+    while (isspace(buf[i]) && i < SIZE) {
+        i++;
+    }
+
+    // 验证请求方法
+    if (strcasecmp(req_info->method, "GET") != 0 && 
+        strcasecmp(req_info->method, "POST") != 0) {
+        printf("method error\n");
+        close(sock);
+        return -1;
+    }
+
+    // 判断是否为POST请求
+    if (strcasecmp(req_info->method, "POST") == 0) {
+        req_info->need_handle = 1;
+    } else {
+        req_info->need_handle = 0;
+    }
+
+    // 提取URL和查询字符串
+    int t = 0;
+    req_info->query_string = NULL;
+    for (; i < SIZE; i++) {
+        if (isspace(buf[i])) {
+            break;
+        }
+        
+        if (buf[i] == '?') {
+            req_info->query_string = &req_info->url[t + 1];
+            req_info->url[t] = '\0';
+        } else {
+            req_info->url[t] = buf[i];
+        }
+        t++;
+    }
+    req_info->url[t] = '\0';
+
+    // 如果是GET请求且带有查询参数，也需要自定义处理
+    if (strcasecmp(req_info->method, "GET") == 0 && req_info->query_string != NULL) {
+        req_info->need_handle = 1;
+    }
+
+    printf("url = %s\n", req_info->url);
+    printf("query_string = %s\n", req_info->query_string);
+
+    return 0;
+}
+
+// 构建文件路径
+static void build_file_path(const char *url, char *path, size_t path_size)
+{
+    char exe_path[256];
+    ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
+    if (len == -1) {
+        perror("readlink error");
+        return;
+    }
+    exe_path[len] = '\0';
+
+    char *dir = dirname(exe_path);
+    dir = dirname(dir);
+
+    snprintf(path, path_size, "%s/wwwroot%s", dir, url);
+
+    // 如果请求的是目录，默认返回index.html
+    if (path[strlen(path) - 1] == '/') {
+        strncat(path, "index.html", path_size - strlen(path) - 1);
+    }
+
+    printf("path = %s\n", path);
+}
+
+// 检查文件是否存在
+static int check_file_exists(const char *path, struct stat *st)
+{
+    if (stat(path, st) == -1) {
+        printf("can not find file\n");
+        return -1;
+    }
+    return 0;
+}
 
 // 用于处理客户端信息函数的定义
 // sock表示客户端套接字文件描述符
 // 接收请求 → 解析请求行 → 提取方法/URL → 区分GET/POST → 路由分发 → 返回响应
 int handler_msg(int sock)
 {
-    //定义容器存储客户端发来的数据
+    // 定义容器存储客户端发来的数据
     char del_buf[SIZE] = "";
 
-    //读取客户端发来的请求
-    //通常我们使用recv接收客户端请求时，最后一个参数如果是0表示阻塞读取，并将数据读走
-    //而最后一个参数为MSG_PEEK时，仅仅指示表示查看套接字中的数据，并不读走
+    // 读取客户端发来的请求（仅查看，不读走）
     recv(sock, del_buf, SIZE, MSG_PEEK);
 
 #if 1
-    //看一看客户端发来的数据
+    // 打印客户端发来的数据
     printf("-------------------------------------------------\n");
     printf("%s\n", del_buf);
     printf("-------------------------------------------------\n");
 #endif
 
-    //接下来就是解析HTTP请求
-    //获取请求行
-    char buf[SIZE] = "";        //用于存储读取下来的客户端请求信息的一行
-    int count = get_line(sock, buf);
-    //功能：获取套接字中的一行信息
-    //参数1：套接字文件描述符
-    //参数2：读取一行的字符串
-    //返回值：当前行的字符串长度
-
-    //程序执行至此，表示buf中已经存储了请求行的信息
-    //接下来需要解析请求行中的请求方法、请求url。。。
-    char method[32] = "";      //存储请求方法的容器
-    int k = 0;             //填充请求方法
-
-    //遍历请求行首部  ---> buf
-    int i = 0;         //用于遍历buf的循环变量
-    for(i=0; i<count; i++)
-    {
-        //找到了任意一个字符
-        if(isspace(buf[i]))       //如果该字符是空格，直接结束遍历
-        {
-            break;
-        }
-
-        method[k++] = buf[i];      //将字符放入方法串中
-    }
-    method[k] = '\0';          //将字符串补充完整
-    //程序执行至此，method数组中就存储了请求方法
-
-    //将空格跳过
-    while(isspace(buf[i]) && i<SIZE)
-    {
-        i++;      
-    }
-    //程序执行至此，i就记录了buf中后面的第一个非空字符串
-
-    //判断请求方法是GET请求还是POST请求
-    if(strcasecmp(method, "GET")!=0 && strcasecmp(method,"POST")!=0)
-    {
-        //说明该请求方法既不是GET请求也不是POST请求
-        printf("method error\n");
-        //echo_error(sock, 405);      //向客户端回复一个错误页面
-        close(sock);           //关闭套接字
+    // 解析请求行
+    RequestInfo req_info;
+    memset(&req_info, 0, sizeof(RequestInfo));
+    
+    if (parse_request_line(sock, &req_info) != 0) {
         return -1;
     }
 
-    //判断是否为POST请求
-    int need_handle = 0;          //标识是否要进行手动处理界面，如果是1，则需要对数据处理，0表示不需要处理
-    if(strcasecmp(method, "POST") == 0)
-    {
-        need_handle = 1;
-    }
+    // 构建文件路径
+    char path[SIZE] = "";
+    build_file_path(req_info.url, path, sizeof(path));
 
-    //拿去要处理的url以及发送的数据（如果有?的话）
-    char url[SIZE] = "";       //存储要解析的url
-    int t = 0;                //填充url字符串的变量
-    char *querry_string = NULL;     //指向url中，是否有要处理的数据，如果有，则指向要处理数据的起始地址
-
-    for(; i<SIZE; i++)      //继续向后遍历请求首部
-    {
-        //可能还会出现空格
-        if(isspace(buf[i]))
-        {
-            break;                //表示url读取结束
-        }
-
-        //此时表示buf[i]是一个url中的一个字符
-        if(buf[i] == '?')           //说明请求中有数据要处理
-        {
-            //将资源路径保存至url字符数组中，并且使用querry_string指向附加数据
-            querry_string = &url[t]; 
-            querry_string ++;          //表示指向问号后的字符串
-            url[t] = '\0';             //表示结束
-        }else
-        {
-            url[t] = buf[i];      //其余普通字符，直接放入url容器中
-        }
-
-        t++;         //继续填充下一个url内容
-    }
-    url[t] = '\0';        //将字符串补充完整
-
-    printf("url = %s\n", url);
-    printf("querry_string = %s\n", querry_string);
-
-    //程序执行至此，表示url数据也已经拿取下来了
-
-    //如果是GET请求，并且有附带数据，也是需要手动处理数据的
-    //例如：http://192.168.31.245:8080/index.html?tt=234，需要进行额外的处理
-    if(strcasecmp(method, "GET")==0 && querry_string!=NULL)
-    {
-        need_handle = 1;          //也需要进行手动处理
-    }
-
-    //我们可以把请求资源路径固定为 wwwroot 下的资源
-    char path[SIZE] = "";         //用于确定要响应的文件路径
-    // 获取可执行文件的路径，上一层路径就是文件根目录
-    char exe_path[256];
-    // "/home/.../http/bin/thttpd"
-    ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
-    if (len == -1) {
-        perror("readlink error");
-        close(sock);
-        return -1;
-    }
-    exe_path[len] = '\0';  // 确保字符串以 null 结尾  
-
-    char *dir = dirname(exe_path);   // "/home/.../http/bin"
-    dir = dirname(dir);             // "/home/.../http"  ← 项目根目录！
-
-    sprintf(path, "%s/wwwroot%s", dir, url);       //将url合成一个服务器中的路径
-
-
-    //如果请求的没有的地址没有任何携带资源，那么默认返回index.html
-    if(path[strlen(path)-1] == '/')
-    {
-        strcat(path, "index.html");
-    }
-
-    printf("path = %s\n", path);
-
-
-
-    //判断当前服务器中是否有该path
-    struct stat st;         //定义文件状态类型的结构体
-    if(stat(path, &st) ==-1)              //如果指定的文件存在，则会把该文件的信息放入st结构体中，如果不存在，函数返回-1
-    {
-        //说明要访问的文件不存在
-        printf("can not find file\n");
+    // 检查文件是否存在
+    struct stat st;
+    if (check_file_exists(path, &st) != 0) {
         echo_error(sock, 404);
         close(sock);
         return -1;
     }
 
-    //程序执行至此，表示能够确定是否需要自己来处理后续逻辑了
-
-    //如果是POST请求或者是携带数据的GET请求，都需要手动书写逻辑进行处理
-    if(need_handle == 1)
-    {
-        handle_request(sock, method, path, querry_string);
-        //调用处理请求函数
-        //参数1：套接字文件描述符
-        //参数2：请求方法
-        //参数3：请求的路径
-        //参数4：请求附带的数据
-    }else
-    {
-        //调用清除 请求首部剩余的内容
+    // 根据请求类型分发处理
+    if (req_info.need_handle == 1) {
+        // POST请求或带参数的GET请求，需要自定义处理
+        handle_request(sock, req_info.method, path, req_info.query_string);
+    } else {
+        // 普通GET请求，直接返回文件内容
         clear_header(sock);
-
-        //此时表示是GET请求,并且没有附加数据，则直接返回请求的界面即可
         echo_www(sock, path, st.st_size);
     }
 
-
-//表示所有请求都正常处理了
-    close(sock);        //关闭客户端
+    // 关闭客户端连接
+    close(sock);
     return 0;
 }
