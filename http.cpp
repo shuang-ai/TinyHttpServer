@@ -120,7 +120,7 @@ static void show_404(int sock)
     send(sock, "\r\n", strlen("\r\n"), 0);     //发送一个空行，切记切记
 
     //打开一个html页面文档
-    struct  stat st;     //定义一个文件状态结构体
+    struct stat st;     //定义一个文件状态结构体
     stat("../wwwroot/404.html", &st);         //获取wwwroot目录下的404界面信息，主要使用该信息中文件大小的成员
     int fd = open("../wwwroot/404.html", O_RDONLY);    //以只读的形式打开文件
     if(fd == -1)
@@ -276,6 +276,7 @@ static int parse_request_line(int sock, RequestInfo *req_info)
     }
 
     // 验证请求方法
+    // strcasecmp忽略大小写比较两个字符串
     if (strcasecmp(req_info->method, "GET") != 0 && 
         strcasecmp(req_info->method, "POST") != 0) {
         printf("method error\n");
@@ -297,7 +298,9 @@ static int parse_request_line(int sock, RequestInfo *req_info)
         if (isspace(buf[i])) {
             break;
         }
-        
+        // 在 HTTP 协议中，URL 的标准格式如下： 
+        // /path/to/resource?key1=value1&key2=value2
+        // ?可以用来区分URL 中的“路径部分”和“查询参数部分”
         if (buf[i] == '?') {
             req_info->query_string = &req_info->url[t + 1];
             req_info->url[t] = '\0';
@@ -375,6 +378,7 @@ int handler_msg(int sock)
     RequestInfo req_info;
     memset(&req_info, 0, sizeof(RequestInfo));
     
+    // 解析请求行，提取方法和URL
     if (parse_request_line(sock, &req_info) != 0) {
         return -1;
     }

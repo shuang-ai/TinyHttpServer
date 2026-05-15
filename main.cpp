@@ -5,16 +5,18 @@
 #include <sys/socket.h>   // 建议补充：提供 socket, accept 等定义
 #include <pthread.h>      // 建议补充：提供 pthread_t, pthread_create 等定义
 #include <unistd.h> 
+#include<thread>
+// #include<memory>
 //定义线程体函数
-void *msg_request(void *arg)
-{
-    //解析到传进来的客户端的套接字文件描述符
-    int sock = *(int *)arg;
+// void *msg_request(void *arg)
+// {
+//     //解析到传进来的客户端的套接字文件描述符
+//     int sock = *(int *)arg;
 
-    //调用信息处理函数，该函数是所有请求的入口
-    handler_msg(sock);
-    return NULL;
-}
+//     //调用信息处理函数，该函数是所有请求的入口
+//     handler_msg(sock);
+//     return NULL;
+// }
 
 
 /*******************主程序**************************** */
@@ -55,16 +57,20 @@ int main(int argc, const char *argv[])
 
         printf("您有新的客户端发来连接请求了\n");
 
-        //创建一个分支线程用户跟客户端进行通信
-        pthread_t tid = -1;
-        if(pthread_create(&tid, NULL, msg_request, &sock) >0)
-        {
-            printf("pthread_create error\n");
-            return -1;
-        }
+        // //创建一个分支线程用户跟客户端进行通信
+        // pthread_t tid = -1;
+        // if(pthread_create(&tid, NULL, msg_request, &sock) >0)
+        // {
+        //     printf("pthread_create error\n");
+        //     return -1;
+        // }
 
-        //将线程设置成分离态
-        pthread_detach(tid);
+        // //将线程设置成分离态
+        // pthread_detach(tid);
+        std::thread t([&sock](){
+            handler_msg(sock);
+        });
+        t.detach();
     }
 
     //关闭服务器
