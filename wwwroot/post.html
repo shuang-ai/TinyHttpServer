@@ -1,49 +1,285 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POST请求测试</title>
+    <title>在线计算器 - shuang的HTTP服务器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: moveBackground 20s linear infinite;
+        }
+
+        @keyframes moveBackground {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .calculator-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 50px 40px;
+            width: 500px;
+            max-width: 90%;
+            position: relative;
+            z-index: 1;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .calculator-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .calculator-header h1 {
+            color: #333;
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .calculator-header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        .input-group label {
+            display: block;
+            color: #555;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 18px;
+            transition: all 0.3s;
+            background: #fafafa;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .input-group input::placeholder {
+            color: #aaa;
+        }
+
+        .operator {
+            text-align: center;
+            font-size: 32px;
+            color: #667eea;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+
+        .result-group {
+            margin-top: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+        }
+
+        .result-group label {
+            display: block;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .result-group input {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            font-size: 24px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-align: center;
+        }
+
+        .result-group input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .calculate-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 25px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .calculate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .calculate-btn:active {
+            transform: translateY(0);
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        .back-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+
+        .back-link a:hover {
+            color: #764ba2;
+        }
+
+        @media (max-width: 480px) {
+            .calculator-container {
+                padding: 40px 30px;
+            }
+
+            .calculator-header h1 {
+                font-size: 28px;
+            }
+        }
+    </style>
 
     <script>
-        function sendPOSTRequest()
-        {
-            var xhr = new XMLHttpRequest();    //创建一个XMLHttpRequest对象
-            var url = "";     //请求的url，这个目前可以不写
+        function sendPOSTRequest() {
+            var xhr = new XMLHttpRequest();
+            var url = "/post.html";
 
-            //h获取当前ui界面上的数据
-            data = "data1=" + document.getElementById("data1").value + "data2=" + document.getElementById("data2").value;
+            var data1 = document.getElementById("data1").value;
+            var data2 = document.getElementById("data2").value;
+            
+            // 按照后端期望的格式：data1=10data2=20（没有&符号）
+            var data = "data1=" + data1 + "data2=" + data2;
 
-            console.log("req = " + data);      //在网页终端上显示
-            //配置POST请求
-            xhr.open("POST", url, true);     //配置请求：POST方法，URL，异步请求
+            console.log("发送数据: " + data);
 
-            xhr.onreadystatechange = function()
-            {
-                if(xhr.readyState===4 && xhr.status===200)
-                {
-                    var response = xhr.responseText;       //获取响应的数据
-                    console.log("req = " + response);
-                    document.getElementById("sum").value = response;
+            xhr.open("POST", url, true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+            xhr.onreadystatechange = function() {
+                if(xhr.readyState === 4) {
+                    if(xhr.status === 200) {
+                        var response = xhr.responseText;
+                        console.log("响应结果: " + response);
+                        document.getElementById("sum").value = response;
+                    } else {
+                        console.log("请求失败，状态码: " + xhr.status);
+                        document.getElementById("sum").value = "请求失败";
+                    }
                 }
             };
 
-            //将当前界面的信息发送给服务器
-            xhr.send(JSON.stringify(data));    //发送请求数据并将其转换为JSON格式
+            xhr.onerror = function() {
+                console.log("网络错误");
+                document.getElementById("sum").value = "网络错误";
+            };
+
+            xhr.send(data);
         }
 
-
+        // 支持回车键计算
+        document.addEventListener('DOMContentLoaded', function() {
+            var inputs = document.querySelectorAll('input[type="text"]');
+            inputs.forEach(function(input) {
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        sendPOSTRequest();
+                    }
+                });
+            });
+        });
     </script>
-
-
-
 </head>
 <body>
-    
-    data1: <input type="text" id="data1" value="1"> <br>
-    data2: <input type="text" id="data2" value="2"> <br>
-    求和： <input type="text" id="sum" placeholder="在此处显示和"><br><br>
-    <button onclick="sendPOSTRequest()">求和</button>
+    <div class="calculator-container">
+        <div class="calculator-header">
+            <h1>🧮 在线计算器</h1>
+            <p>输入两个数字，点击求和按钮获取结果</p>
+        </div>
 
+        <div class="input-group">
+            <label for="data1">第一个数字</label>
+            <input type="text" id="data1" value="1" placeholder="请输入第一个数字">
+        </div>
+
+        <div class="operator">+</div>
+
+        <div class="input-group">
+            <label for="data2">第二个数字</label>
+            <input type="text" id="data2" value="2" placeholder="请输入第二个数字">
+        </div>
+
+        <button onclick="sendPOSTRequest()" class="calculate-btn">计 算 求 和</button>
+
+        <div class="result-group">
+            <label for="sum">计算结果</label>
+            <input type="text" id="sum" placeholder="结果将显示在这里" readonly>
+        </div>
+
+        <div class="back-link">
+            <a href="/index.html">← 返回首页</a>
+        </div>
+    </div>
 </body>
 </html>

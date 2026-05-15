@@ -1,121 +1,193 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>登录界面</title>
-
-    <style type="text/css">
+    <title>用户登录</title>
+    <style>
         * {
-            padding: 0;
             margin: 0;
-        }
-
-        html,
-        body {
-            height: 100%;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            /* 渐变色网站： https://webgradients.com/*/
-            background-image: linear-gradient(to top, #ace0f9 0%, #fff1eb 100%);
-            /* 渐变换图片 */
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
         }
 
-        .login {
-            width: 400px;
-            height: 250px;
-            background-image: linear-gradient(to top, #30cfd0 0%, #330867 100%);
-            border-radius: 8px;
+        body::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: moveBackground 20s linear infinite;
         }
 
-        .login h1 {
-            height: 38px;
-            width: 93%;
-            background-image: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            line-height: 38px;
-            font-size: 30px;
+        @keyframes moveBackground {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 50px 40px;
+            width: 420px;
+            max-width: 90%;
+            position: relative;
+            z-index: 1;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-header {
             text-align: center;
-            border-radius: 5px;
-            margin: 15px auto;
+            margin-bottom: 40px;
         }
 
-        .login-form {
-            width: 60%;
-            margin: 0 auto;
+        .login-header h1 {
+            color: #333;
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 10px;
         }
 
-        .login-form form input {
-            width: 220px;
-            height: 30px;
+        .login-header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            color: #555;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            transition: color 0.3s;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s;
+            background: #fafafa;
+        }
+
+        .form-group input:focus {
             outline: none;
-            margin: 10px auto;
-            border-radius: 5px;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
         }
 
-        .button {
-            /* 按钮样式模板网站：http://tools.jb51.net/static/api/button_css/ */
-            line-height: 30px;
-            height: 30px;
-            width: 70px;
-            color: #ffffff;
-            background-color: #4a8cf7;
+        .form-group input::placeholder {
+            color: #aaa;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
             font-size: 16px;
-            font-weight: normal;
-            font-family: Arial;
-            border: 0px solid #dcdcdc;
-            -webkit-border-top-left-radius: 3px;
-            -moz-border-radius-topleft: 3px;
-            border-top-left-radius: 3px;
-            -webkit-border-top-right-radius: 3px;
-            -moz-border-radius-topright: 3px;
-            border-top-right-radius: 3px;
-            -webkit-border-bottom-left-radius: 3px;
-            -moz-border-radius-bottomleft: 3px;
-            border-bottom-left-radius: 3px;
-            -webkit-border-bottom-right-radius: 3px;
-            -moz-border-radius-bottomright: 3px;
-            border-bottom-right-radius: 3px;
-            -moz-box-shadow: inset 0px 0px 0px 0px #ffffff;
-            -webkit-box-shadow: inset 0px 0px 0px 0px #ffffff;
-            box-shadow: inset 0px 0px 0px 0px #ffffff;
-            text-align: center;
-            display: inline-block;
-            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .button:hover {
-            background-color: #446bf7;
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
         }
 
-        .footer {
-            position: fixed;
-            bottom: 0;
-            height: 50px;
-            font-size: 12px;
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .footer-text {
             text-align: center;
-            font-family: "宋体";
+            margin-top: 25px;
+            color: #999;
+            font-size: 13px;
+        }
+
+        .icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 18px;
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 40px 30px;
+            }
+
+            .login-header h1 {
+                font-size: 28px;
+            }
         }
     </style>
-
 </head>
 <body>
-    <div>
-        <h1>表单完成POST请求案例</h1>
-
-        <div class="login-form">
-            <form method="post">
-                
-                <input type="text" name="username" id="usr" value="" placeholder="请输入账号">
-                <input type="password" name="password" id="pwd" value="" placeholder="请输入密码">
-                <input type="submit" class="button" value="登录">
-
-            </form>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>欢迎登录</h1>
+            <p>请输入您的账号和密码</p>
         </div>
 
+        <form method="post">
+            <div class="form-group">
+                <label for="usr">用户名</label>
+                <input type="text" name="username" id="usr" placeholder="请输入用户名" required>
+            </div>
+
+            <div class="form-group">
+                <label for="pwd">密码</label>
+                <input type="password" name="password" id="pwd" placeholder="请输入密码" required>
+            </div>
+
+            <button type="submit" class="login-btn">登 录</button>
+        </form>
+
+        <div class="footer-text">
+            © 2025 星球部落. All rights reserved.
+        </div>
     </div>
 </body>
 </html>
