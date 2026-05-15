@@ -7,17 +7,28 @@
 #define KB 1024
 #define HTML_SIZE (64*1024)
 
-//处理求和的相关逻辑
+//处理求和的相关逻辑//处理求和的相关逻辑
 static int handle_add(int sock, const char * req_buf)
 {
-    int num1, num2;     //存储传过来的两个数据
+    int num1, num2;
 
-    //使用函数，将数据解析出来
-    sscanf(req_buf, "\"data1=%ddata2=%d\"", &num1, &num2);
+    const char *p1 = strstr(req_buf, "data1=");
+    const char *p2 = strstr(req_buf, "data2=");
+    
+    if(p1 == NULL || p2 == NULL)
+    {
+        const char *error_msg = "Error";
+        send(sock, error_msg, strlen(error_msg), 0);
+        return -1;
+    }
+
+    sscanf(p1, "data1=%d", &num1);
+    sscanf(p2, "data2=%d", &num2);
+    
     printf("num1 = %d, num2 = %d\n", num1, num2);
 
     char reply_buf[HTML_SIZE] = "";
-    sprintf(reply_buf, "%d", num1+num2);      //将和转换为字符串
+    sprintf(reply_buf, "%d", num1+num2);
     printf("reply_buf = %s\n", reply_buf);
 
     send(sock, reply_buf, strlen(reply_buf), 0);
@@ -26,6 +37,7 @@ static int handle_add(int sock, const char * req_buf)
     return 0;
 
 }
+
 
 
 //定义有关处理登录界面的函数
